@@ -1,0 +1,45 @@
+#!/usr/bin/python3
+
+import argparse
+import collections
+import functools
+import gzip
+import re
+
+interesting = re.compile(br'^((?:usr/)?s?bin/)([^/\s]+)\s+(\S+)').match
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument('files', metavar='FILE', nargs='+')
+    options = ap.parse_args()
+    data = collections.defaultdict(
+        lambda: collections.defaultdict(set)
+    )
+    for filename in options.files:
+        if filename.endswith('.gz'):
+            file = gzip.open(filename)
+        else:
+            file = open(filename, 'rb')
+        with file:
+            for line in file:
+                if line.startswith(b'FILE'):
+                    break
+            for line in file:
+                match = interesting(line)
+                if match is not None:
+                    path, command, packages = (s.decode('UTF-8') for s in match.groups())
+                    packages = set(p.split('/')[-1] for p in packages.split(','))
+                    data[command][path] |= packages
+    for command, paths in data.items():
+        if len(paths) > 1:
+            packages = functools.reduce(set.union, paths.values(), set())
+            if len(packages) > 1:
+                print('{command}: {packages}'.format(
+                    command=command,
+                    packages=' '.join(sorted(packages))
+                ))
+
+if __name__ == '__main__':
+    main()
+
+# vim:ts=4 sw=4 et
