@@ -11,7 +11,7 @@ import functools
 import gzip
 import re
 
-interesting = re.compile(br'^((?:usr/)?s?bin/)([^/\s]+)\s+(\S+)').match
+interesting = re.compile(br'^((?:usr/)?s?bin/|usr/games/)([^/\s]+)\s+(\S+)').match
 
 def main():
     ap = argparse.ArgumentParser()
